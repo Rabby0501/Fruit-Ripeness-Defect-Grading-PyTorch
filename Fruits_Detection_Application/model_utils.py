@@ -1,6 +1,5 @@
 """
 model_utils.py
-─────────────────────────────────────────────────────────────────────────────
 Contains:
   1. SEBlock              — Squeeze-and-Excitation attention module
   2. build_model()        — reconstructs the exact architecture used in training
@@ -8,7 +7,7 @@ Contains:
   4. GradCAM class        — forward/backward hooks for Grad-CAM heatmap generation
   5. predict()            — runs inference, returns prediction + confidence + probs
   6. generate_gradcam()   — runs Grad-CAM and returns an overlay image
-─────────────────────────────────────────────────────────────────────────────
+  
 This file mirrors the exact architecture from the training notebook so that
 state_dict keys match perfectly when loading best_model.pth.
 """
@@ -90,15 +89,6 @@ def load_model(checkpoint_path, device):
 
 
 def load_ablation_model(checkpoint_path, device, num_classes):
-    """
-    Loads an ablation checkpoint (ablation_with_aug.pth / ablation_no_aug.pth).
-
-    These checkpoints have a different structure than best_model.pth —
-    they store "class_to_idx" and "augmentation" but not "num_classes",
-    so num_classes must be passed in explicitly (from the main model).
-
-    Returns: (model, was_trained_with_augmentation: bool)
-    """
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
     model = build_model(num_classes, device)
@@ -120,10 +110,6 @@ def get_transform(img_size=224):
 
 # 5. Standard inference — prediction + confidence + full distribution
 def predict(model, image_pil, transform, class_names, device):
-    """
-    Runs a forward pass on a single PIL image.
-    Returns: predicted_class (str), confidence (float 0-1), probs (np.array)
-    """
     model.eval()
     tensor = transform(image_pil).unsqueeze(0).to(device)  # [1, 3, 224, 224]
 
@@ -171,17 +157,7 @@ class GradCAM:
         self.gradients = grad_output[0].detach()
 
     def generate(self, input_tensor, class_idx=None):
-        """
-        Runs a forward + backward pass and computes the Grad-CAM heatmap.
-
-        Args:
-            input_tensor: [1, 3, H, W] preprocessed image tensor
-            class_idx: target class index. If None, uses the predicted class.
-
-        Returns:
-            heatmap: np.array [H, W] normalized to [0, 1]
-            class_idx: the class index used for the explanation
-        """
+    
         self.model.eval()
         input_tensor = input_tensor.requires_grad_(True)
 
@@ -224,22 +200,6 @@ class GradCAM:
 
 def generate_gradcam_overlay(model, image_pil, transform, target_layer, device,
                               class_idx=None, alpha=0.45):
-    """
-    High-level helper: runs Grad-CAM and returns a heatmap-overlaid image.
-
-    Args:
-        model: trained model
-        image_pil: original PIL image (any size)
-        transform: preprocessing pipeline (resize + normalize)
-        target_layer: the nn.Module to hook (e.g. model.features[-1][0])
-        device: torch device
-        class_idx: which class to explain (None = predicted class)
-        alpha: overlay blend strength (0 = only original image, 1 = only heatmap)
-
-    Returns:
-        overlay_img: np.array [H, W, 3] uint8 — original image with heatmap overlay
-        used_class_idx: the class index that was explained
-    """
     # Preprocess
     input_tensor = transform(image_pil).unsqueeze(0).to(device)
 
