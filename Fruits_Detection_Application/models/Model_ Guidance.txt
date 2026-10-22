@@ -1,0 +1,6 @@
+# Before run the application, you should copy 3 models from the models section and put it in this folder.
+
+1. best_model_v2.pth
+2. ablation_with_aug_v2.pth
+3. ablation_no_aug_v2.pth
+
